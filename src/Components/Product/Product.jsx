@@ -7,22 +7,40 @@ const API_URL = "https://dummyjson.com";
 const Product = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [laylo, setLaylo] = useState(1);
+  const [limit, setLimit] = useState(1);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+  // Fetch categories
+  useEffect(() => {
+    axios
+      .get(`${API_URL}/products/category-list`)
+      .then((res) => setCategories(res.data))
+      .catch((err) => console.log(err));
+  }, []);
 
   useEffect(() => {
-    setLoading(true); // Start loading
+    setLoading(true);
+    const categoryUrl = selectedCategory
+      ? `/products/category/${selectedCategory}`
+      : "/products";
     axios
-      .get(`${API_URL}/products`, {
+      .get(`${API_URL}${categoryUrl}`, {
         params: {
-          limit: 4 * laylo,
+          limit: 4 * limit,
         },
       })
-      .then((res) => setProducts(res.data.products))
-      .catch((err) => console.error("Failed to fetch products:", err))
-      .finally(() => setLoading(false)); // Stop loading when request is complete
-  }, [laylo]);
+      .then((res) => {
+        setProducts(res.data.products || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch products:", err);
+        setLoading(false);
+      });
+  }, [limit, selectedCategory]);
 
-  const handleClick = () => setLaylo((prev) => prev + 1);
+  const handleClick = () => setLimit((prev) => prev + 1);
 
   const loadingSkeleton = Array(4)
     .fill(0)
@@ -72,7 +90,7 @@ const Product = () => {
           >
             -
           </button>
-          <p className="text-black">{laylo}</p>
+          <p className="text-black">{limit}</p>
           <button
             onClick={handleClick}
             className="flex items-center justify-center pb-1 border w-[14px] h-[14px] border-[#7d7d7d] text-[#7d7d7d] rounded-[5px] text-1xl"
@@ -89,20 +107,28 @@ const Product = () => {
     </div>
   ));
 
+  const categoryOptions = categories.map((category) => (
+    <option key={category} value={category}>
+      {category}
+    </option>
+  ));
+
   return (
-    <div id="Product" className="mt-16 container mx-auto">
-      <select name="" id="" className="mb-4 p-2 border rounded">
-        <option value="">Select a category</option>
-        <option value="">Select a category</option>
-        <option value="">Select a category</option>
-        <option value="">Select a category</option>
+    <div id="Product" className="mt-16 container mx-auto px-4">
+      <select
+        onChange={(e) => setSelectedCategory(e.target.value)}
+        value={selectedCategory}
+        className="mb-4 p-2 border rounded"
+      >
+        <option value="">All</option>
+        {categoryOptions}
       </select>
       <div className="flex flex-wrap justify-between">
         {loading ? loadingSkeleton : productItem}
       </div>
       <button
         className="border block mx-auto mt-10 rounded-[20px] py-2 px-2 bg-gray-800 text-white"
-        onClick={() => setLaylo((prev) => prev + 1)}
+        onClick={handleClick}
       >
         See more
       </button>
@@ -111,4 +137,3 @@ const Product = () => {
 };
 
 export default Product;
-
